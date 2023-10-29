@@ -156,3 +156,15 @@ class Sender:
             print(f'The "{display_value}" {name} already exists.')
         else:
             print(f'When creating the "{display_value}" {name}, the server returned an error.')
+
+
+class Fetcher:
+    """Забирает данные с Markets-Bridge."""
+
+    def get_existed_characteristic_value_ids(self) -> set[int]:
+        return {value['external_id'] for value in self.get_characteristic_values()}
+
+    def get_characteristic_values(self):
+        values = requests.get(config.mb_characteristic_values_url).json()
+
+        return values

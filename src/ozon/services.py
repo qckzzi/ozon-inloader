@@ -126,6 +126,7 @@ class Fetcher:
             })
             characteristic = OzonCharacteristic(**raw_characteristic)
 
+            # if characteristic.id not in (8229, 4194, 85, 9048):
             result.append(characteristic)
 
         return result
