@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """Основной модуль запуска загрузчика."""
+import argparse
+
 from markets_bridge.services import (
     Formatter,
     Sender,
@@ -10,9 +12,18 @@ from ozon.services import (
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--category_id',
+        type=int,
+        default=0,
+        help='Идентификатор категории, для которой загрузятся характеристики',
+    )
+    args = parser.parse_args()
+
     fetcher = Fetcher()
 
-    characteristics = fetcher.get_characteristics()
+    characteristics = fetcher.get_characteristics(args.category_id)
     formatted_characteristics = Formatter.format_characteristics(characteristics)
     Sender.send_characteristics(formatted_characteristics)
 

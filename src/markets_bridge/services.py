@@ -24,30 +24,21 @@ class Formatter:
         родительские категории. Поэтому если категорию уже отформатировали, то пополняем список родителей.
         """
 
-        formatted_and_merged_categories: dict[int, MBCategory] = {}
+        result = []
 
         for category in raw_categories:
-            if category.category_id not in formatted_and_merged_categories:
-                formatted_category = cls._format_category(category)
-                formatted_and_merged_categories[category.category_id] = formatted_category
-            else:
-                formatted_category = formatted_and_merged_categories[category.category_id]
+            result.append(cls._format_category(category))
 
-                if category.parent_category_id:
-                    formatted_category.parent_category_external_ids.append(category.parent_category_id)
-
-        return list(formatted_and_merged_categories.values())
+        return result
 
     @classmethod
     def _format_category(cls, category: OzonCategory) -> MBCategory:
-        args = [
+        args = (
             category.category_id,
-            category.category_name,
+            category.title,
             config.marketplace_id,
-        ]
-
-        if parent_id := category.parent_category_id:
-            args.append([parent_id])
+            category.parent_id,
+        )
 
         formatted_category = MBCategory(*args)
 
@@ -77,11 +68,13 @@ class Formatter:
     @staticmethod
     def _format_characteristic(characteristic: OzonCharacteristic) -> MBCharacteristic:
         formatted_characteristic = MBCharacteristic(
-            characteristic.id,
-            characteristic.name,
-            characteristic.is_required,
-            config.marketplace_id,
-            [characteristic.product_type_id],
+            external_id=characteristic.id,
+            name=characteristic.name,
+            description=characteristic.description,
+            is_required=characteristic.is_required,
+            has_reference_values=bool(characteristic.dictionary_id),
+            marketplace_id=config.marketplace_id,
+            category_external_ids=[characteristic.category_id],
         )
 
         return formatted_characteristic
@@ -93,8 +86,7 @@ class Formatter:
         result = []
 
         for value in raw_values:
-            formatted_value = cls._format_characteristic_value(value)
-            result.append(formatted_value)
+            result.append(cls._format_characteristic_value(value))
 
         return result
 

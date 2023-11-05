@@ -30,9 +30,9 @@ class Fetcher:
 
         return self._categories
 
-    def get_characteristics(self) -> list[OzonCharacteristic]:
+    def get_characteristics(self, external_category_id: int = None) -> list[OzonCharacteristic]:
         if not self._characteristics:
-            self._fetch_characteristics()
+            self._fetch_characteristics(external_category_id)
 
         return self._characteristics
 
@@ -72,10 +72,9 @@ class Fetcher:
 
         for raw_category in raw_categories:
             category = OzonCategory(
-                category_id=raw_category.get('category_id') or raw_category.get('type_id'),
-                category_name=raw_category.get('category_name') or raw_category.get('type_name'),
-                disabled=raw_category.get('disabled'),
-                parent_category_id=parent_id,
+                category_id=raw_category.get('category_id'),
+                title=raw_category.get('title'),
+                parent_id=parent_id,
             )
             result.append(category)
 
@@ -85,27 +84,32 @@ class Fetcher:
 
         return result
 
-    def _fetch_characteristics(self):
-        self._characteristics = self._get_characteristics_from_ozon()
+    def _fetch_characteristics(self, external_category_id: int | None):
+        self._characteristics = self._get_characteristics_from_ozon(external_category_id)
 
-    def _get_characteristics_from_ozon(self) -> list[OzonCharacteristic]:
+    def _get_characteristics_from_ozon(self, external_category_id: int | None) -> list[OzonCharacteristic]:
         """Возвращает список из DTO характеристик OZON."""
 
-        relevant_categories = requests.get(config.mb_relevant_categories_url).json()
+        if external_category_id:
+            relevant_categories = [{'external_id': external_category_id}]
+        else:
+            relevant_categories = requests.get(config.mb_relevant_categories_url).json()
 
         result = []
 
         for category in relevant_categories:
 
             category_id = category.get('external_id')
-            parent_category_id = category.get('parent_external_id')
 
-            body = dict(category_id=parent_category_id, type_id=category_id)
+            body = dict(category_id=[category_id])
 
             response = requests.post(config.ozon_characteristics_url, json=body, headers=self.headers)
-            raw_characteristics = response.json().get('result')
+            response_json = response.json().get('result')
 
-            result.extend(self._unpack_characteristics(raw_characteristics, category_id, parent_category_id))
+            for characteristics_data in response_json:
+                raw_characteristics = characteristics_data.get('attributes')
+                category_id = characteristics_data.get('category_id')
+                result.extend(self._unpack_characteristics(raw_characteristics, category_id))
 
         return result
 
@@ -113,7 +117,6 @@ class Fetcher:
     def _unpack_characteristics(
             raw_characteristics: list[dict],
             category_id: int,
-            parent_category_id: int,
     ) -> list[OzonCharacteristic]:
         """Десериализует данные характеристик в DTO."""
 
@@ -121,8 +124,7 @@ class Fetcher:
 
         for raw_characteristic in raw_characteristics:
             raw_characteristic.update({
-                'product_type_id': category_id,
-                'category_id': parent_category_id,
+                'category_id': category_id,
             })
             characteristic = OzonCharacteristic(**raw_characteristic)
 
@@ -151,7 +153,6 @@ class Fetcher:
             body = dict(
                 attribute_id=characteristic.id,
                 category_id=characteristic.category_id,
-                type_id=characteristic.product_type_id,
                 limit=5000,
             )
 
