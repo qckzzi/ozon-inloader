@@ -123,10 +123,13 @@ class Fetcher:
         result = []
 
         for raw_characteristic in raw_characteristics:
-            raw_characteristic.update({
-                'category_id': category_id,
-            })
+            raw_characteristic['category_id'] = category_id
+
             characteristic = OzonCharacteristic(**raw_characteristic)
+
+            # TODO: Придумать иное решение, но пока эти 2 характеристики заполняет программа, а не администратор
+            if characteristic.id in (config.ozon_brand_characteristic_id, config.ozon_model_name_characteristic_id):
+                characteristic.is_required = False
 
             result.append(characteristic)
 
@@ -149,7 +152,8 @@ class Fetcher:
     def _get_characteristic_values_by_characteristic(self, characteristic: OzonCharacteristic) -> list[OzonCharacteristicValue]:
         values = []
 
-        if characteristic.dictionary_id:
+        # TODO: Придумать другое решение, но пока просто не загружаем значения брендов, т.к. их очень много
+        if characteristic.dictionary_id and characteristic.id != config.ozon_brand_characteristic_id:
             body = dict(
                 attribute_id=characteristic.id,
                 category_id=characteristic.category_id,
