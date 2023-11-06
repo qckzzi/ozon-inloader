@@ -8,15 +8,15 @@ class OzonCategory:
     """DTO категорий OZON."""
 
     category_id: int
-    category_name: str
-    disabled: bool
-    parent_category_id: int = None
+    title: str
+    parent_id: int | None = None
 
 
 @dataclass
 class OzonCharacteristic:
     """DTO характеристик OZON."""
 
+    category_dependent: bool
     id: int
     name: str
     description: str
@@ -27,7 +27,6 @@ class OzonCharacteristic:
     group_name: str
     group_id: int
     dictionary_id: int
-    product_type_id: int
     category_id: int
 
 

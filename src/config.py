@@ -30,9 +30,9 @@ ozon_domain = os.getenv('OZON_DOMAIN')
 if not ozon_domain:
     raise ValueError('Не задан домен OZON API.')
 
-ozon_categories_url = ozon_domain + 'v1/description-category/tree'
-ozon_characteristics_url = ozon_domain + 'v1/description-category/attribute'
-ozon_characteristic_values_url = ozon_domain + 'v1/description-category/attribute/values'
+ozon_categories_url = ozon_domain + 'v2/category/tree'
+ozon_characteristics_url = ozon_domain + 'v3/category/attribute'
+ozon_characteristic_values_url = ozon_domain + 'v2/category/attribute/values'
 
 ozon_client_id = os.getenv('OZON_CLIENT_ID')
 ozon_api_key = os.getenv('OZON_API_KEY')
