@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(
 
 # TODO: Вынести бизнес-логику из ручки и декомпозировать ее
 @app.get('/load_ozon_attributes/')
-def update_for_category(category_id: int):
+def update_for_category(category_id: int | None):
     fetcher = Fetcher()
 
     characteristics = fetcher.get_characteristics(category_id)
