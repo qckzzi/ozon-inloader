@@ -1,3 +1,5 @@
+import logging
+
 import requests
 
 import config
@@ -143,8 +145,8 @@ class Sender:
         display_value = getattr(obj, display_field)
 
         if response.status_code == 201:
-            print(f'The "{display_value}" {name} has been created.')
+            logging.info(f'The "{display_value}" {name} has been created.')
         elif response.status_code == 200:
-            print(f'The "{display_value}" {name} already exists.')
+            logging.info(f'The "{display_value}" {name} already exists.')
         else:
-            print(f'When creating the "{display_value}" {name}, the server returned an error.')
+            logging.error(f'When creating the "{display_value}" {name}, the server returned an error.')
