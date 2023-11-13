@@ -21,8 +21,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(
 
 
 # TODO: Вынести бизнес-логику из ручки и декомпозировать ее
-@app.get('/load_ozon_attributes/')
-def update_for_category(category_id: int | None):
+@app.get('/load_ozon_attributes_for_category/')
+def load_ozon_attributes_for_category(category_id: int):
     fetcher = Fetcher()
 
     characteristics = fetcher.get_characteristics(category_id)
@@ -38,7 +38,15 @@ def update_for_category(category_id: int | None):
 
     Sender.send_characteristic_values(not_existed_values)
 
-    if not category_id:
-        categories = fetcher.get_categories()
-        formatted_categories = Formatter.format_categories(categories)
-        Sender.send_categories(formatted_categories)
+@app.get('/load_categories/')
+def load_categories():
+    fetcher = Fetcher()
+
+    categories = fetcher.get_categories()
+    formatted_categories = Formatter.format_categories(categories)
+
+    existed_categories = requests.get(config.mb_categories_url).json()
+    existed_value_ids = {category.get('external_id') for category in existed_categories}
+    not_existed_categories = list(filter(lambda x: x.external_id not in existed_value_ids, formatted_categories))
+
+    Sender.send_categories(not_existed_categories)
