@@ -265,6 +265,21 @@ def get_existed_characteristic_values() -> dict:
     return response.json()
 
 
+def get_existed_categories() -> dict:
+    headers = get_authorization_headers()
+    response = requests.get(config.mb_categories_url, headers=headers)
+
+    if response.status_code == 401:
+        accesser = Accesser()
+        accesser.update_access_token()
+
+        return get_existed_categories()
+
+    response.raise_for_status()
+
+    return response.json()
+
+
 def create_characteristic_matchings(category_matching_id: int):
     body = {'category_matching_id': category_matching_id}
     headers = get_authorization_headers()

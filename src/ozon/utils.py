@@ -181,6 +181,39 @@ class Fetcher:
 
         return values
 
+    def get_brand_values(self, category_external_id: int) -> list[OzonCharacteristicValue]:
+        values = []
+
+        body = dict(
+            attribute_id=config.ozon_brand_characteristic_id,
+            category_id=category_external_id,
+            limit=5000,
+        )
+
+        response = self._send_characteristic_value_request(body)
+        response_values = response.get('result')
+
+        for raw_value in response_values:
+            raw_value['attribute_id'] = config.ozon_brand_characteristic_id
+            value = OzonCharacteristicValue(**raw_value)
+
+            values.append(value)
+
+        while response.get('has_next'):
+            last_value_id = response_values[-1].get('id')
+            body['last_value_id'] = last_value_id
+
+            response = self._send_characteristic_value_request(body)
+            response_values = response.get('result')
+
+            for raw_value in response_values:
+                raw_value['attribute_id'] = config.ozon_brand_characteristic_id
+                value = OzonCharacteristicValue(**raw_value)
+
+                values.append(value)
+
+        return values
+
     def _send_characteristic_value_request(self, body: dict):
         """Возвращает ответ на запрос получения характеристик, исходя из параметров в body."""
 

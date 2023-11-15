@@ -3,13 +3,12 @@ import json
 import logging
 
 import pika
-import requests
 
-import config
 from markets_bridge.utils import (
     Formatter,
     Sender,
     create_characteristic_matchings,
+    get_existed_categories,
     get_existed_characteristic_values,
     write_log_entry,
 )
@@ -30,6 +29,8 @@ def callback(ch, method, properties, body):
                 load_ozon_attributes_for_category(message['category_external_id'], message['matching_id'])
             case 'LOAD_CATEGORIES':
                 load_categories()
+            case 'LOAD_BRANDS':
+                load_brands(category_id=message['category_external_id'])
 
     except KeyError as e:
         error = f'Body validation error: {e}'
@@ -55,7 +56,6 @@ def load_ozon_attributes_for_category(category_id: int, matching_id: int):
     existed_characteristic_values = get_existed_characteristic_values()
     existed_value_ids = {value.get('external_id') for value in existed_characteristic_values}
     not_existed_values = list(filter(lambda x: x.external_id not in existed_value_ids, formatted_characteristic_values))
-
     Sender.send_characteristic_values(not_existed_values)
 
     create_characteristic_matchings(matching_id)
@@ -67,11 +67,24 @@ def load_categories():
     categories = fetcher.get_categories()
     formatted_categories = Formatter.format_categories(categories)
 
-    existed_categories = requests.get(config.mb_categories_url).json()
-    existed_value_ids = {category.get('external_id') for category in existed_categories}
-    not_existed_categories = list(filter(lambda x: x.external_id not in existed_value_ids, formatted_categories))
+    existed_categories = get_existed_categories()
+    existed_category_ids = {category.get('external_id') for category in existed_categories}
+    not_existed_categories = list(filter(lambda x: x.external_id not in existed_category_ids, formatted_categories))
 
     Sender.send_categories(not_existed_categories)
+
+
+def load_brands(category_id: int):
+    fetcher = Fetcher()
+
+    brand_values = fetcher.get_brand_values(category_id)
+    formatted_brand_values = Formatter.format_characteristic_values(brand_values)
+
+    existed_characteristic_values = get_existed_characteristic_values()
+    existed_value_ids = {value.get('external_id') for value in existed_characteristic_values}
+
+    not_existed_brands = list(filter(lambda x: x.external_id not in existed_value_ids, formatted_brand_values))
+    Sender.send_characteristic_values(not_existed_brands)
 
 
 if __name__ == '__main__':
