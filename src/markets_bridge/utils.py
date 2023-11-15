@@ -48,24 +48,15 @@ class Formatter:
 
     @classmethod
     def format_characteristics(cls, raw_characteristics: list[OzonCharacteristic]) -> list[MBCharacteristic]:
-        """Форматирует характеристики озона под шаблон MB характеристик.
+        """Форматирует характеристики озона под шаблон MB характеристик."""
 
-        Метод также сливает повторяющиеся озон характеристики из списка raw_characteristics.
-        У них могут отличаться лишь категории. Поэтому если характеристику уже отформатировали,
-        то пополняем список связанных категорий.
-        """
-
-        formatted_and_merged_characteristics: dict[int, MBCharacteristic] = {}
+        formatted_characteristics = []
 
         for characteristic in raw_characteristics:
-            if characteristic.id not in formatted_and_merged_characteristics:
-                formatted_characteristic = cls._format_characteristic(characteristic)
-                formatted_and_merged_characteristics[characteristic.id] = formatted_characteristic
-            else:
-                formatted_characteristic = formatted_and_merged_characteristics[characteristic.id]
-                formatted_characteristic.category_external_ids.append(characteristic.category_id)
+            formatted_characteristic = cls._format_characteristic(characteristic)
+            formatted_characteristics.append(formatted_characteristic)
 
-        return list(formatted_and_merged_characteristics.values())
+        return formatted_characteristics
 
     @staticmethod
     def _format_characteristic(characteristic: OzonCharacteristic) -> MBCharacteristic:
@@ -76,7 +67,7 @@ class Formatter:
             is_required=characteristic.is_required,
             has_reference_values=bool(characteristic.dictionary_id),
             marketplace_id=config.marketplace_id,
-            category_external_ids=[characteristic.category_id],
+            category_external_id=characteristic.category_id,
         )
 
         return formatted_characteristic
@@ -272,6 +263,19 @@ def get_existed_characteristic_values() -> dict:
     response.raise_for_status()
 
     return response.json()
+
+
+def create_characteristic_matchings(category_matching_id: int):
+    body = {'category_matching_id': category_matching_id}
+    headers = get_authorization_headers()
+    response = requests.post(config.mb_create_characteristic_matchings_url, json=body, headers=headers)
+
+    if response.status_code == 401:
+        accesser = Accesser()
+        accesser.update_access_token()
+        create_characteristic_matchings(category_matching_id)
+
+    response.raise_for_status()
 
 
 def get_authorization_headers() -> dict:

@@ -9,6 +9,7 @@ import config
 from markets_bridge.utils import (
     Formatter,
     Sender,
+    create_characteristic_matchings,
     get_existed_characteristic_values,
     write_log_entry,
 )
@@ -56,8 +57,9 @@ def load_ozon_attributes_for_category(category_id: int, matching_id: int):
     not_existed_values = list(filter(lambda x: x.external_id not in existed_value_ids, formatted_characteristic_values))
 
     Sender.send_characteristic_values(not_existed_values)
-    body = {'category_matching_id': matching_id}
-    requests.post(config.mb_create_characteristic_matchings_url, json=body)
+
+    create_characteristic_matchings(matching_id)
+
 
 def load_categories():
     fetcher = Fetcher()
@@ -80,4 +82,7 @@ if __name__ == '__main__':
         channel = connection.channel()
         channel.queue_declare('inloading')
         channel.basic_consume('inloading', callback, auto_ack=True)
-        channel.start_consuming()
+        try:
+            channel.start_consuming()
+        except KeyboardInterrupt:
+            pass
