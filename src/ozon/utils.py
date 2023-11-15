@@ -1,6 +1,10 @@
 import requests
 
 import config
+from markets_bridge.utils import (
+    get_ozon_api_key,
+    get_ozon_client_id,
+)
 from ozon.types import (
     OzonCategory,
     OzonCharacteristic,
@@ -14,15 +18,12 @@ class Fetcher:
     Собирает и хранит в себе атрибуты внешней системы. Возвращает их в таком виде, в каком и получил.
     """
 
-    headers = {
-        'Client-Id': config.ozon_client_id,
-        'Api-Key': config.ozon_api_key,
-    }
-
     def __init__(self):
         self._categories: list[OzonCategory] = []
         self._characteristics: list[OzonCharacteristic] = []
         self._characteristic_values: list[OzonCharacteristicValue] = []
+
+        self._headers = None
 
     def get_categories(self) -> list[OzonCategory]:
         if not self._categories:
@@ -59,7 +60,7 @@ class Fetcher:
         """Возвращает ответ на запрос получения категорий."""
 
         try:
-            response = requests.post(config.ozon_categories_url, headers=self.headers).json()
+            response = requests.post(config.ozon_categories_url, headers=self._get_headers()).json()
         except (requests.ConnectionError, requests.ConnectTimeout):
             response = self._send_category_request()
 
@@ -84,32 +85,23 @@ class Fetcher:
 
         return result
 
-    def _fetch_characteristics(self, external_category_id: int | None):
+    def _fetch_characteristics(self, external_category_id: int):
         self._characteristics = self._get_characteristics_from_ozon(external_category_id)
 
-    def _get_characteristics_from_ozon(self, external_category_id: int | None) -> list[OzonCharacteristic]:
+    def _get_characteristics_from_ozon(self, external_category_id: int) -> list[OzonCharacteristic]:
         """Возвращает список из DTO характеристик OZON."""
-
-        if external_category_id:
-            relevant_categories = [{'external_id': external_category_id}]
-        else:
-            relevant_categories = requests.get(config.mb_relevant_categories_url).json()
 
         result = []
 
-        for category in relevant_categories:
+        body = dict(category_id=[external_category_id])
 
-            category_id = category.get('external_id')
+        response = requests.post(config.ozon_characteristics_url, json=body, headers=self._get_headers())
+        response_json = response.json().get('result')
 
-            body = dict(category_id=[category_id])
-
-            response = requests.post(config.ozon_characteristics_url, json=body, headers=self.headers)
-            response_json = response.json().get('result')
-
-            for characteristics_data in response_json:
-                raw_characteristics = characteristics_data.get('attributes')
-                category_id = characteristics_data.get('category_id')
-                result.extend(self._unpack_characteristics(raw_characteristics, category_id))
+        for characteristics_data in response_json:
+            raw_characteristics = characteristics_data.get('attributes')
+            category_id = characteristics_data.get('category_id')
+            result.extend(self._unpack_characteristics(raw_characteristics, category_id))
 
         return result
 
@@ -127,8 +119,13 @@ class Fetcher:
 
             characteristic = OzonCharacteristic(**raw_characteristic)
 
-            # TODO: Придумать иное решение, но пока эти 2 характеристики заполняет программа, а не администратор
-            if characteristic.id in (config.ozon_brand_characteristic_id, config.ozon_model_name_characteristic_id):
+            # TODO: Придумать иное решение, но пока эти 3 характеристики заполняет программа, а не администратор
+            not_required_characteristic_ids = (
+                config.ozon_brand_characteristic_id,
+                config.ozon_model_name_characteristic_id,
+                config.ozon_name_characteristic_id,
+            )
+            if characteristic.id in not_required_characteristic_ids:
                 characteristic.is_required = False
 
             result.append(characteristic)
@@ -184,12 +181,53 @@ class Fetcher:
 
         return values
 
+    def get_brand_values(self, category_external_id: int) -> list[OzonCharacteristicValue]:
+        values = []
+
+        body = dict(
+            attribute_id=config.ozon_brand_characteristic_id,
+            category_id=category_external_id,
+            limit=5000,
+        )
+
+        response = self._send_characteristic_value_request(body)
+        response_values = response.get('result')
+
+        for raw_value in response_values:
+            raw_value['attribute_id'] = config.ozon_brand_characteristic_id
+            value = OzonCharacteristicValue(**raw_value)
+
+            values.append(value)
+
+        while response.get('has_next'):
+            last_value_id = response_values[-1].get('id')
+            body['last_value_id'] = last_value_id
+
+            response = self._send_characteristic_value_request(body)
+            response_values = response.get('result')
+
+            for raw_value in response_values:
+                raw_value['attribute_id'] = config.ozon_brand_characteristic_id
+                value = OzonCharacteristicValue(**raw_value)
+
+                values.append(value)
+
+        return values
+
     def _send_characteristic_value_request(self, body: dict):
         """Возвращает ответ на запрос получения характеристик, исходя из параметров в body."""
 
         try:
-            response = requests.post(config.ozon_characteristic_values_url, json=body, headers=self.headers).json()
+            response = requests.post(config.ozon_characteristic_values_url, json=body, headers=self._get_headers()).json()
         except (requests.ConnectionError, requests.ConnectTimeout):
             response = self._send_characteristic_value_request(body)
 
         return response
+
+    def _get_headers(self):
+        if not self._headers:
+            client_id = get_ozon_client_id()
+            ozon_api_key = get_ozon_api_key()
+            self._headers = {'Client-Id': client_id, 'Api-Key': ozon_api_key}
+
+        return self._headers

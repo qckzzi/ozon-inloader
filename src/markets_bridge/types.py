@@ -20,7 +20,7 @@ class MBCharacteristic:
     is_required: bool
     has_reference_values: bool
     marketplace_id: int
-    category_external_ids: list[int] = field(default_factory=list)
+    category_external_id: int
 
 
 @dataclass
