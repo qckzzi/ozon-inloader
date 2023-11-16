@@ -80,8 +80,7 @@ class Fetcher:
             result.append(category)
 
             if children := raw_category.get('children'):
-                parent_id = category.category_id
-                result.extend(self._unpack_categories(children, parent_id))
+                result.extend(self._unpack_categories(children, category.category_id))
 
         return result
 
