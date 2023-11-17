@@ -66,12 +66,7 @@ def load_categories():
 
     categories = fetcher.get_categories()
     formatted_categories = Formatter.format_categories(categories)
-
-    existed_categories = get_existed_categories()
-    existed_category_ids = {category.get('external_id') for category in existed_categories}
-    not_existed_categories = list(filter(lambda x: x.external_id not in existed_category_ids, formatted_categories))
-
-    Sender.send_categories(not_existed_categories)
+    Sender.send_categories(formatted_categories)
 
 
 def load_brands(category_id: int):
