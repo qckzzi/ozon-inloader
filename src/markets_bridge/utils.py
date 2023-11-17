@@ -200,7 +200,10 @@ class Accesser(Singleton):
 
         if response.status_code == 401:
             self.update_jwt()
-            response = requests.post(config.mb_token_refresh_url, json=body)
+            requests.post(config.mb_token_refresh_url, json=body)
+            self.update_access_token()
+
+            return
 
         response.raise_for_status()
 
@@ -218,8 +221,9 @@ def write_log_entry(message: str):
     if response.status_code == 401:
         accesser = Accesser()
         accesser.update_access_token()
+        write_log_entry(message)
 
-        return write_log_entry(message)
+        return
 
     response.raise_for_status()
 
@@ -289,6 +293,8 @@ def create_characteristic_matchings(category_matching_id: int):
         accesser = Accesser()
         accesser.update_access_token()
         create_characteristic_matchings(category_matching_id)
+
+        return
 
     response.raise_for_status()
 
