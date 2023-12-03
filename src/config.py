@@ -32,7 +32,7 @@ if not (mb_login and mb_password):
 
 mb_token_url = mb_domain + 'api/token/'
 mb_token_refresh_url = mb_token_url + 'refresh/'
-mb_system_environments_url = mb_domain + 'api/v1/common/system_environments/'
+mb_system_variables_url = mb_domain + 'api/v1/common/system_variables/'
 mb_logs_url = mb_domain + 'api/v1/common/logs/'
 
 
