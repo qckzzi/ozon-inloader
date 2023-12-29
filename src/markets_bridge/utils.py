@@ -254,19 +254,27 @@ def _get_system_variable_value(variable_name: str) -> str:
     return result
 
 
-def get_existed_characteristic_values() -> dict:
+def get_existed_characteristic_values() -> list[dict]:
+    response = _send_characteristic_values_get_request()
+    response_json = response.json()
+    count = response_json['count']
+    response = _send_characteristic_values_get_request({'limit': count})
+
+    return response.json()['results']
+
+
+def _send_characteristic_values_get_request(params: dict = None):
     headers = get_authorization_headers()
-    response = requests.get(config.mb_characteristic_values_url, headers=headers)
+    response = requests.get(config.mb_characteristic_values_url, headers=headers, params=params or {})
 
     if response.status_code == 401:
         accesser = Accesser()
         accesser.update_access_token()
-
-        return get_existed_characteristic_values()
+        response = _send_characteristic_values_get_request(params)
 
     response.raise_for_status()
 
-    return response.json()
+    return response
 
 
 def get_existed_categories() -> dict:
