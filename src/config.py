@@ -37,10 +37,7 @@ mb_logs_url = mb_domain + 'api/v1/common/logs/'
 
 
 # OZON
-ozon_domain = os.getenv('OZON_API_DOMAIN')
-
-if not ozon_domain:
-    raise ValueError('OZON_API_DOMAIN not set')
+ozon_domain = 'https://api-seller.ozon.ru/'
 
 ozon_categories_url = ozon_domain + 'v2/category/tree'
 ozon_characteristics_url = ozon_domain + 'v3/category/attribute'
