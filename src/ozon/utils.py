@@ -12,6 +12,7 @@ from ozon.types import (
 )
 
 
+# FIXME: DRY и KISS
 class Fetcher:
     """Сборщик данных OZON.
 
@@ -25,11 +26,8 @@ class Fetcher:
 
         self._headers = None
 
-    def get_categories(self) -> list[OzonCategory]:
-        if not self._categories:
-            self._fetch_categories()
-
-        return self._categories
+    def get_categories(self) -> tuple[list[OzonCategory], list[OzonCharacteristicValue]]:
+        return self._get_categories_from_ozon()
 
     def get_characteristics(self, external_category_id: int = None) -> list[OzonCharacteristic]:
         if not self._characteristics:
@@ -46,15 +44,13 @@ class Fetcher:
     def _fetch_categories(self):
         self._categories = self._get_categories_from_ozon()
 
-    def _get_categories_from_ozon(self) -> list[OzonCategory]:
-        """Возвращает список DTO категорий OZON."""
+    def _get_categories_from_ozon(self) -> tuple[list[OzonCategory], list[OzonCharacteristicValue]]:
+        """Возвращает пару списков DTO категорий и типов товаров OZON."""
 
         response = self._send_category_request()
         raw_categories = response.get('result')
 
-        categories = self._unpack_categories(raw_categories)
-
-        return categories
+        return self._unpack_categories(raw_categories)
 
     def _send_category_request(self) -> dict:
         """Возвращает ответ на запрос получения категорий."""
@@ -66,23 +62,36 @@ class Fetcher:
 
         return response
 
-    def _unpack_categories(self, raw_categories: list[dict], parent_id: int = None) -> list[OzonCategory]:
+    def _unpack_categories(self, raw_categories: list[dict], parent_id: int = None) -> tuple[list[OzonCategory], list[OzonCharacteristicValue]]:
         """Распаковка дерева категорий и десериализация в DTO."""
 
-        result = []
+        categories = []
+        product_types = []
 
         for raw_category in raw_categories:
-            category = OzonCategory(
-                category_id=raw_category.get('category_id'),
-                title=raw_category.get('title'),
-                parent_id=parent_id,
-            )
-            result.append(category)
+            if category_id := raw_category.get('description_category_id'):
+                category = OzonCategory(
+                    description_category_id=category_id,
+                    category_name=raw_category.get('category_name'),
+                    parent_id=parent_id,
+                )
+                categories.append(category)
+                children_categories, children_product_types = self._unpack_categories(
+                    raw_category.get('children'),
+                    category.description_category_id,
+                )
 
-            if children := raw_category.get('children'):
-                result.extend(self._unpack_categories(children, category.category_id))
+                categories.extend(children_categories)
+                product_types.extend(children_product_types)
+            else:
+                product_type = OzonCharacteristicValue(
+                    attribute_id=config.ozon_product_type_characteristic_id,
+                    id=raw_category.get('type_id'),
+                    value=raw_category.get('type_name'),
+                )
+                product_types.append(product_type)
 
-        return result
+        return categories, product_types
 
     def _fetch_characteristics(self, external_category_id: int):
         self._characteristics = self._get_characteristics_from_ozon(external_category_id)

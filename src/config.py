@@ -39,10 +39,11 @@ mb_logs_url = mb_domain + 'api/v1/common/logs/'
 # OZON
 ozon_domain = 'https://api-seller.ozon.ru/'
 
-ozon_categories_url = ozon_domain + 'v2/category/tree'
+ozon_categories_url = ozon_domain + 'v1/description-category/tree'
 ozon_characteristics_url = ozon_domain + 'v3/category/attribute'
 ozon_characteristic_values_url = ozon_domain + 'v2/category/attribute/values'
 
-ozon_brand_characteristic_id = 85 # Характеристика "Бренд"
-ozon_model_name_characteristic_id = 9048 # Характеристика "Название модели"
-ozon_name_characteristic_id = 4180 # Характеристика "Наименование"
+ozon_brand_characteristic_id = 85  # Характеристика "Бренд"
+ozon_model_name_characteristic_id = 9048  # Характеристика "Название модели"
+ozon_name_characteristic_id = 4180  # Характеристика "Наименование"
+ozon_product_type_characteristic_id = 8229  # Характеристика "Тип товара"

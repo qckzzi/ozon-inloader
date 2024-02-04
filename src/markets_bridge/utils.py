@@ -36,8 +36,8 @@ class Formatter:
     @classmethod
     def _format_category(cls, category: OzonCategory) -> MBCategory:
         args = (
-            category.category_id,
-            category.title,
+            category.description_category_id,
+            category.category_name,
             config.marketplace_id,
             category.parent_id,
         )
@@ -263,33 +263,35 @@ def get_existed_characteristic_values() -> list[dict]:
     return response.json()['results']
 
 
+def get_existed_categories() -> list[dict]:
+    response = _send_categories_get_request()
+    response_json = response.json()
+    count = response_json['count']
+    response = _send_categories_get_request({'limit': count})
+
+    return response.json()['results']
+
+
 def _send_characteristic_values_get_request(params: dict = None):
+    return _send_get_request(config.mb_characteristic_values_url, params)
+
+
+def _send_categories_get_request(params: dict = None):
+    return _send_get_request(config.mb_categories_url, params)
+
+
+def _send_get_request(url: str, params: dict = None):
     headers = get_authorization_headers()
-    response = requests.get(config.mb_characteristic_values_url, headers=headers, params=params or {})
+    response = requests.get(url, headers=headers, params=params or {})
 
     if response.status_code == 401:
         accesser = Accesser()
         accesser.update_access_token()
-        response = _send_characteristic_values_get_request(params)
+        response = _send_get_request(url, params)
 
     response.raise_for_status()
 
     return response
-
-
-def get_existed_categories() -> dict:
-    headers = get_authorization_headers()
-    response = requests.get(config.mb_categories_url, headers=headers)
-
-    if response.status_code == 401:
-        accesser = Accesser()
-        accesser.update_access_token()
-
-        return get_existed_categories()
-
-    response.raise_for_status()
-
-    return response.json()
 
 
 def create_characteristic_matchings(category_matching_id: int):

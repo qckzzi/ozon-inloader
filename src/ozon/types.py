@@ -7,8 +7,8 @@ from dataclasses import (
 class OzonCategory:
     """DTO категорий OZON."""
 
-    category_id: int
-    title: str
+    description_category_id: int
+    category_name: str
     parent_id: int | None = None
 
 
@@ -35,7 +35,7 @@ class OzonCharacteristicValue:
     """DTO значений характеристик OZON."""
 
     id: int
-    value: str
-    info: str
-    picture: str
+    value: str | int
     attribute_id: int
+    info: str | None = None
+    picture: str | None = None

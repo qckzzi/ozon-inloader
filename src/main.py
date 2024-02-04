@@ -64,9 +64,23 @@ def load_ozon_attributes_for_category(category_id: int, matching_id: int):
 def load_categories():
     fetcher = Fetcher()
 
-    categories = fetcher.get_categories()
+    categories, product_types = fetcher.get_categories()
     formatted_categories = Formatter.format_categories(categories)
-    Sender.send_categories(formatted_categories)
+
+    existed_categories = get_existed_categories()
+    existed_category_ids = {category.get('external_id') for category in existed_categories}
+
+    not_existed_categories = list(filter(lambda x: x.external_id not in existed_category_ids, formatted_categories))
+
+    Sender.send_categories(not_existed_categories)
+
+    formatted_product_types = Formatter.format_characteristic_values(product_types)
+
+    existed_characteristic_values = get_existed_characteristic_values()
+    existed_value_ids = {value.get('external_id') for value in existed_characteristic_values}
+
+    not_existed_product_types = list(filter(lambda x: x.external_id not in existed_value_ids, formatted_product_types))
+    Sender.send_characteristic_values(not_existed_product_types)
 
 
 def load_brands(category_id: int):
