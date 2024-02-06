@@ -29,9 +29,9 @@ class Fetcher:
     def get_categories(self) -> tuple[list[OzonCategory], list[OzonCharacteristicValue]]:
         return self._get_categories_from_ozon()
 
-    def get_characteristics(self, external_category_id: int = None) -> list[OzonCharacteristic]:
+    def get_characteristics(self, external_category_id: int = None, product_type_external_id: int = None) -> list[OzonCharacteristic]:
         if not self._characteristics:
-            self._fetch_characteristics(external_category_id)
+            self._fetch_characteristics(external_category_id, product_type_external_id)
 
         return self._characteristics
 
@@ -93,25 +93,18 @@ class Fetcher:
 
         return categories, product_types
 
-    def _fetch_characteristics(self, external_category_id: int):
-        self._characteristics = self._get_characteristics_from_ozon(external_category_id)
+    def _fetch_characteristics(self, external_category_id: int, product_type_external_id: int):
+        self._characteristics = self._get_characteristics_from_ozon(external_category_id, product_type_external_id)
 
-    def _get_characteristics_from_ozon(self, external_category_id: int) -> list[OzonCharacteristic]:
+    def _get_characteristics_from_ozon(self, external_category_id: int, product_type_external_id: int) -> list[OzonCharacteristic]:
         """Возвращает список из DTO характеристик OZON."""
 
-        result = []
-
-        body = dict(category_id=[external_category_id])
+        body = dict(description_category_id=external_category_id, type_id=product_type_external_id)
 
         response = requests.post(config.ozon_characteristics_url, json=body, headers=self._get_headers())
-        response_json = response.json().get('result')
+        characteristics = response.json().get('result')
 
-        for characteristics_data in response_json:
-            raw_characteristics = characteristics_data.get('attributes')
-            category_id = characteristics_data.get('category_id')
-            result.extend(self._unpack_characteristics(raw_characteristics, category_id))
-
-        return result
+        return self._unpack_characteristics(characteristics, external_category_id)
 
     @staticmethod
     def _unpack_characteristics(
@@ -126,6 +119,9 @@ class Fetcher:
             raw_characteristic['category_id'] = category_id
 
             characteristic = OzonCharacteristic(**raw_characteristic)
+
+            if characteristic.id == config.ozon_product_type_characteristic_id:
+                continue
 
             # TODO: Придумать иное решение, но пока эти 3 характеристики заполняет программа, а не администратор
             not_required_characteristic_ids = (
@@ -161,7 +157,8 @@ class Fetcher:
         if characteristic.dictionary_id and characteristic.id != config.ozon_brand_characteristic_id:
             body = dict(
                 attribute_id=characteristic.id,
-                category_id=characteristic.category_id,
+                description_category_id=characteristic.description_category_id,
+                type_id=characteristic.type_id,
                 limit=5000,
             )
 

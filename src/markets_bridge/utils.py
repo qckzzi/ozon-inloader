@@ -67,7 +67,7 @@ class Formatter:
             is_required=characteristic.is_required,
             has_reference_values=bool(characteristic.dictionary_id),
             marketplace_id=config.marketplace_id,
-            category_external_id=characteristic.category_id,
+            category_external_id=characteristic.description_category_id,
         )
 
         return formatted_characteristic

@@ -16,7 +16,6 @@ class OzonCategory:
 class OzonCharacteristic:
     """DTO характеристик OZON."""
 
-    category_dependent: bool
     id: int
     name: str
     description: str
@@ -27,7 +26,9 @@ class OzonCharacteristic:
     group_name: str
     group_id: int
     dictionary_id: int
-    category_id: int
+    description_category_id: int
+    type_id: int
+    max_value_count: int
 
 
 @dataclass

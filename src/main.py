@@ -26,7 +26,11 @@ def callback(ch, method, properties, body):
 
         match operation_type:
             case 'LOAD_FOR_CATEGORY':
-                load_ozon_attributes_for_category(message['category_external_id'], message['matching_id'])
+                load_ozon_attributes_for_category(
+                    message['category_external_id'],
+                    message['product_type_external_id'],
+                    message['matching_id']
+                )
             case 'LOAD_CATEGORIES':
                 load_categories()
             case 'LOAD_BRANDS':
@@ -43,10 +47,11 @@ def callback(ch, method, properties, body):
         logging.exception(error)
         return
 
-def load_ozon_attributes_for_category(category_id: int, matching_id: int):
+
+def load_ozon_attributes_for_category(category_id: int, product_type_external_id: int, matching_id: int):
     fetcher = Fetcher()
 
-    characteristics = fetcher.get_characteristics(category_id)
+    characteristics = fetcher.get_characteristics(category_id, product_type_external_id)
     formatted_characteristics = Formatter.format_characteristics(characteristics)
     Sender.send_characteristics(formatted_characteristics)
 
