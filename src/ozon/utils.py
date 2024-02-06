@@ -104,30 +104,33 @@ class Fetcher:
         response = requests.post(config.ozon_characteristics_url, json=body, headers=self._get_headers())
         characteristics = response.json().get('result')
 
-        return self._unpack_characteristics(characteristics, external_category_id)
+        return self._unpack_characteristics(characteristics, external_category_id, product_type_external_id)
 
     @staticmethod
     def _unpack_characteristics(
             raw_characteristics: list[dict],
-            category_id: int,
+            description_category_id: int,
+            type_id: int,
     ) -> list[OzonCharacteristic]:
         """Десериализует данные характеристик в DTO."""
 
         result = []
 
         for raw_characteristic in raw_characteristics:
-            raw_characteristic['category_id'] = category_id
+            raw_characteristic['description_category_id'] = description_category_id
+            raw_characteristic['type_id'] = type_id
 
             characteristic = OzonCharacteristic(**raw_characteristic)
 
             if characteristic.id == config.ozon_product_type_characteristic_id:
                 continue
 
-            # TODO: Придумать иное решение, но пока эти 3 характеристики заполняет программа, а не администратор
+            # TODO: Придумать иное решение, но пока эти характеристики заполняет программа, а не администратор
             not_required_characteristic_ids = (
                 config.ozon_brand_characteristic_id,
                 config.ozon_model_name_characteristic_id,
                 config.ozon_name_characteristic_id,
+                config.ozon_image_characteristic_id,
             )
             if characteristic.id in not_required_characteristic_ids:
                 characteristic.is_required = False

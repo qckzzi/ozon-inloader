@@ -29,6 +29,7 @@ class OzonCharacteristic:
     description_category_id: int
     type_id: int
     max_value_count: int
+    attribute_complex_id: int
 
 
 @dataclass
