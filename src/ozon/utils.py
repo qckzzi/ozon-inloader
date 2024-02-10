@@ -120,7 +120,7 @@ class Fetcher:
             raw_characteristic['description_category_id'] = description_category_id
             raw_characteristic['type_id'] = type_id
 
-            characteristic = OzonCharacteristic(**raw_characteristic)
+            characteristic = OzonCharacteristic.from_dict(raw_characteristic)
 
             if characteristic.id == config.ozon_product_type_characteristic_id:
                 continue
@@ -170,7 +170,7 @@ class Fetcher:
 
             for raw_value in response_values:
                 raw_value['attribute_id'] = characteristic.id
-                value = OzonCharacteristicValue(**raw_value)
+                value = OzonCharacteristicValue.from_dict(raw_value)
 
                 values.append(value)
 
@@ -183,7 +183,7 @@ class Fetcher:
 
                 for raw_value in response_values:
                     raw_value['attribute_id'] = characteristic.id
-                    value = OzonCharacteristicValue(**raw_value)
+                    value = OzonCharacteristicValue.from_dict(raw_value)
 
                     values.append(value)
 
@@ -203,7 +203,7 @@ class Fetcher:
 
         for raw_value in response_values:
             raw_value['attribute_id'] = config.ozon_brand_characteristic_id
-            value = OzonCharacteristicValue(**raw_value)
+            value = OzonCharacteristicValue.from_dict(raw_value)
 
             values.append(value)
 
@@ -216,7 +216,7 @@ class Fetcher:
 
             for raw_value in response_values:
                 raw_value['attribute_id'] = config.ozon_brand_characteristic_id
-                value = OzonCharacteristicValue(**raw_value)
+                value = OzonCharacteristicValue.from_dict(raw_value)
 
                 values.append(value)
 

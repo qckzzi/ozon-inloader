@@ -1,10 +1,17 @@
+import inspect
 from dataclasses import (
     dataclass,
 )
 
 
+class InitFromDictMixin:
+    @classmethod
+    def from_dict(cls, env: dict):
+        return cls(**{k: v for k, v in env.items() if k in inspect.signature(cls).parameters})
+
+
 @dataclass
-class OzonCategory:
+class OzonCategory(InitFromDictMixin):
     """DTO категорий OZON."""
 
     description_category_id: int
@@ -13,7 +20,7 @@ class OzonCategory:
 
 
 @dataclass
-class OzonCharacteristic:
+class OzonCharacteristic(InitFromDictMixin):
     """DTO характеристик OZON."""
 
     id: int
@@ -30,10 +37,11 @@ class OzonCharacteristic:
     type_id: int
     max_value_count: int
     attribute_complex_id: int
+    category_dependent: bool
 
 
 @dataclass
-class OzonCharacteristicValue:
+class OzonCharacteristicValue(InitFromDictMixin):
     """DTO значений характеристик OZON."""
 
     id: int
