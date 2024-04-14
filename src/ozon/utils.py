@@ -26,7 +26,7 @@ class Fetcher:
 
         self._headers = None
 
-    def get_categories(self) -> tuple[list[OzonCategory], list[OzonCharacteristicValue]]:
+    def get_categories(self) -> list[OzonCategory]:
         return self._get_categories_from_ozon()
 
     def get_characteristics(self, external_category_id: int = None, product_type_external_id: int = None) -> list[OzonCharacteristic]:
@@ -44,7 +44,7 @@ class Fetcher:
     def _fetch_categories(self):
         self._categories = self._get_categories_from_ozon()
 
-    def _get_categories_from_ozon(self) -> tuple[list[OzonCategory], list[OzonCharacteristicValue]]:
+    def _get_categories_from_ozon(self) -> list[OzonCategory]:
         """Возвращает пару списков DTO категорий и типов товаров OZON."""
 
         response = self._send_category_request()
@@ -62,11 +62,10 @@ class Fetcher:
 
         return response
 
-    def _unpack_categories(self, raw_categories: list[dict], parent_id: int = None) -> tuple[list[OzonCategory], list[OzonCharacteristicValue]]:
+    def _unpack_categories(self, raw_categories: list[dict], parent_id: int = None) -> list[OzonCategory]:
         """Распаковка дерева категорий и десериализация в DTO."""
 
         categories = []
-        product_types = []
 
         for raw_category in raw_categories:
             if category_id := raw_category.get('description_category_id'):
@@ -76,22 +75,21 @@ class Fetcher:
                     parent_id=parent_id,
                 )
                 categories.append(category)
-                children_categories, children_product_types = self._unpack_categories(
+                children_categories = self._unpack_categories(
                     raw_category.get('children'),
                     category.description_category_id,
                 )
 
                 categories.extend(children_categories)
-                product_types.extend(children_product_types)
             else:
-                product_type = OzonCharacteristicValue(
-                    attribute_id=config.ozon_product_type_characteristic_id,
-                    id=raw_category.get('type_id'),
-                    value=raw_category.get('type_name'),
+                product_type = OzonCategory(
+                    description_category_id=raw_category.get('type_id'),
+                    category_name=raw_category.get('type_name'),
+                    parent_id=parent_id,
                 )
-                product_types.append(product_type)
+                categories.append(product_type)
 
-        return categories, product_types
+        return categories
 
     def _fetch_characteristics(self, external_category_id: int, product_type_external_id: int):
         self._characteristics = self._get_characteristics_from_ozon(external_category_id, product_type_external_id)
@@ -157,7 +155,10 @@ class Fetcher:
         values = []
 
         # TODO: Придумать другое решение, но пока просто не загружаем значения брендов, т.к. их очень много
-        if characteristic.dictionary_id and characteristic.id != config.ozon_brand_characteristic_id:
+        if characteristic.dictionary_id and characteristic.id not in (
+            config.ozon_brand_characteristic_id, 
+            config.ozon_product_type_characteristic_id
+        ):
             body = dict(
                 attribute_id=characteristic.id,
                 description_category_id=characteristic.description_category_id,
@@ -189,12 +190,13 @@ class Fetcher:
 
         return values
 
-    def get_brand_values(self, category_external_id: int) -> list[OzonCharacteristicValue]:
+    def get_brand_values(self, product_type_external_id: int, category_external_id: int) -> list[OzonCharacteristicValue]:
         values = []
 
         body = dict(
             attribute_id=config.ozon_brand_characteristic_id,
-            category_id=category_external_id,
+            description_category_id=category_external_id,
+            type_id=product_type_external_id,
             limit=5000,
         )
 

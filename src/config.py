@@ -19,6 +19,7 @@ mb_relevant_categories_url = mb_categories_url + 'relevant/'
 mb_characteristics_url = mb_domain + 'api/v1/recipient/characteristics/'
 mb_characteristic_values_url = mb_domain + 'api/v1/recipient/characteristic_values/'
 mb_create_characteristic_matchings_url = mb_domain + 'api/v1/common/characteristic_matchings/create_by_category_matching/'
+mb_compare_product_characteristics_url = mb_domain + 'api/v1/provider/products/compare_characteristics/'
 marketplace_id = int(os.getenv('OZON_ID', default=0))
 
 if not marketplace_id:
@@ -42,6 +43,13 @@ ozon_domain = 'https://api-seller.ozon.ru/'
 ozon_categories_url = ozon_domain + 'v1/description-category/tree'
 ozon_characteristics_url = ozon_domain + 'v1/description-category/attribute'
 ozon_characteristic_values_url = ozon_domain + 'v1/description-category/attribute/values'
+
+# RabbitMQ
+mq_user = os.getenv("MQ_USER")
+mq_password = os.getenv("MQ_PASSWORD")
+
+if not mq_user or not mq_password:
+    raise ValueError("MQ_USER and MQ_PASSWORD not set")
 
 ozon_brand_characteristic_id = 85  # Характеристика "Бренд"
 ozon_model_name_characteristic_id = 9048  # Характеристика "Название модели"

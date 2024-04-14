@@ -100,11 +100,9 @@ class Sender:
 
     @classmethod
     def send_categories(cls, categories: list[MBCategory]):
-        cls._send_objects(
+        cls._send_batch_objects(
             categories,
             url=config.mb_categories_url,
-            name='category',
-            display_field='name',
         )
 
     @classmethod
@@ -118,17 +116,30 @@ class Sender:
 
     @classmethod
     def send_characteristic_values(cls, values: list[MBCharacteristicValue]):
-        cls._send_objects(
+        cls._send_batch_objects(
             values,
             url=config.mb_characteristic_values_url,
-            name='characteristic_value',
-            display_field='value',
         )
 
     @classmethod
     def _send_objects(cls, objects, **kwargs):
         for obj in objects:
             cls._send_object(obj, **kwargs)
+    
+    @classmethod
+    def _send_batch_objects(cls, objects, url):
+        headers = get_authorization_headers()
+        response = requests.post(url, json=dict(objects=[vars(obj) for obj in objects]), headers=headers)
+
+        if response.status_code == 401:
+            accesser = Accesser()
+            accesser.update_access_token()
+            cls._send_object(objects, url)
+
+            return
+
+        if response.status_code == 201:
+            logging.info(f'{len(objects)} objects has been created.')
 
     @classmethod
     def _send_object(cls, obj, url, name, display_field):
@@ -254,6 +265,15 @@ def _get_system_variable_value(variable_name: str) -> str:
     return result
 
 
+def get_existed_characteristics() -> list[dict]:
+    response = _send_characteristics_get_request()
+    response_json = response.json()
+    count = response_json['count']
+    response = _send_characteristics_get_request({'limit': count})
+
+    return response.json()['results']
+
+
 def get_existed_characteristic_values() -> list[dict]:
     response = _send_characteristic_values_get_request()
     response_json = response.json()
@@ -270,6 +290,10 @@ def get_existed_categories() -> list[dict]:
     response = _send_categories_get_request({'limit': count})
 
     return response.json()['results']
+
+
+def _send_characteristics_get_request(params: dict = None):
+    return _send_get_request(config.mb_characteristics_url, params)
 
 
 def _send_characteristic_values_get_request(params: dict = None):
@@ -303,6 +327,21 @@ def create_characteristic_matchings(category_matching_id: int):
         accesser = Accesser()
         accesser.update_access_token()
         create_characteristic_matchings(category_matching_id)
+
+        return
+
+    response.raise_for_status()
+
+
+def compare_product_characteristics(product_id: int):
+    body = {'product_id': product_id}
+    headers = get_authorization_headers()
+    response = requests.post(config.mb_compare_product_characteristics_url, json=body, headers=headers)
+
+    if response.status_code == 401:
+        accesser = Accesser()
+        accesser.update_access_token()
+        create_characteristic_matchings(product_id)
 
         return
 
